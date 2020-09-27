@@ -1,16 +1,35 @@
-void setup() {
-  Serial.begin(9600);
+#include <QuadDisplay.h>
+
+unsigned long particle_counter = 0;
+unsigned long particle_displayed = -1;
+
+void setup()
+{
+  pinMode(A0, INPUT);
   pinMode(3, INPUT_PULLUP);
   pinMode(4, INPUT_PULLUP);
 }
 
-void loop() {
-  int sensorVal1 = digitalRead(3);
-  int sensorVal2 = digitalRead(4);
-  if (sensorVal1 == LOW) {
+void loop()
+{
+  if(analogRead(A0) > 200)
+  {
+    particle_counter++;
+    delayMicroseconds(5000); 
+  }
+  if(particle_counter != particle_displayed)
+  {
+    displayInt(2, particle_counter);
+    particle_displayed = particle_counter;
+  }
+}
+
+int check_switch_state()
+{
+  if(digitalRead(3) == LOW) {
     Serial.println(1);
   }
-  else if(sensorVal2 == LOW)
+  else if(digitalRead(4) == LOW)
   {
     Serial.println(3);
   }
