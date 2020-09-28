@@ -1,13 +1,23 @@
 #include <QuadDisplay.h>
 
+#define CONVERSION_COEF 1.08
+#define FILTER_COEF 0.2
+
 unsigned long particle_counter = 0;
 unsigned long particle_displayed_1 = -1;
 unsigned long particle_displayed_2 = -1;
 unsigned long particle_start_3 = 0;
 unsigned long last_particle_time = 0;
 int last_mode = 0;
+bool lock_3_mode = false;
 
 unsigned long part_times[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+float expRunningAverage(float newVal) {
+  static float filVal = 0;
+  filVal += (newVal - filVal) * FILTER_COEF;
+  return filVal;
+}
 
 void setup()
 {
@@ -42,38 +52,49 @@ void loop()
       }
       else if(particle_counter >= 11 && particle_displayed_2 != particle_counter)
       {
-        displayFloat(2, double(60000)/(double(part_times[0]+part_times[1]+part_times[2]+part_times[3]+part_times[4])/double(6)), 1);
+        displayFloat(2, double(60000)/(double(part_times[0]+part_times[1]+part_times[2]+part_times[3]+part_times[4])/double(6))/double(1.08), 1);
+        float now_val = double(60000)/(double(part_times[0]+part_times[1]+part_times[2]+part_times[3]+part_times[4])/double(6))/double(1.08);
+        
         particle_displayed_2 = particle_counter;
       }
-      if(last_mode != 2)
+      if(particle_counter > 10 && last_mode != 2)
       {
-        displayFloat(2, double(60000)/(double(part_times[0]+part_times[1]+part_times[2]+part_times[3]+part_times[4])/double(6)), 1);
+        displayFloat(2, double(60000)/(double(part_times[0]+part_times[1]+part_times[2]+part_times[3]+part_times[4])/double(6))/double(1.08), 1);
         particle_displayed_2 = particle_counter;
       }
     break;
     case 3:
-      particle_start_3 = particle_counter;
-      for(int timer = 5; timer != 0; timer--)
+      if(!lock_3_mode)
       {
-        Serial.println(timer);
-        displayInt(2, timer);
-        for(unsigned long i = millis(); millis()-i < 1000;)
+        particle_start_3 = particle_counter;
+        for(int timer = 5; timer != 0; timer--)
         {
-          if(analogRead(A0) > 200)
+          Serial.println(timer);
+          displayInt(2, timer);
+          for(unsigned long i = millis(); millis()-i < 1000;)
           {
-            particle_counter++;
-            delay(5);
+            if(analogRead(A0) > 200)
+            {
+              particle_counter++;
+              delay(5);
+            }
           }
-        } 
+        }
+        displayInt(2, particle_counter-particle_start_3);
+        Serial.println(particle_counter-particle_start_3);
+        lock_3_mode = true;
       }
-      Serial.print("part");
-      Serial.println(particle_counter-particle_start_3);
     break;
   }
   last_mode = mode;
+  if(mode != 3) lock_3_mode = false;
   if(analogRead(A0) > 200)
   {
     particle_counter++;
+    float now_val = millis() - last_particle_time;
+    Serial.print(now_val);
+    Serial.print(" ");
+    Serial.println(expRunningAverage(now_val));
     delayMicroseconds(5000); 
     if(particle_counter < 11)
     {
