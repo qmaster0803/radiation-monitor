@@ -7,6 +7,7 @@ unsigned long particle_counter = 0;
 unsigned long particle_displayed = -1;
 unsigned long particle_start_3 = 0;
 unsigned long last_particle_time = 0;
+unsigned long particle_count_in_mode_3 = 0;
 int last_mode = 0;
 bool lock_3_mode = false;
 
@@ -62,9 +63,20 @@ void loop()
             }
           }
         }
-        displayInt(2, particle_counter-particle_start_3);
-        Serial.println(particle_counter-particle_start_3);
+        particle_count_mode_3 = particle_counter-particle_start_3;
         lock_3_mode = true;
+      }
+      else
+      {
+        displayInt(2, particle_count_mode_3);
+        while(true)
+        {
+          if(check_switch_state() != 3)
+          {
+            break;
+          }
+          delay(500);
+        }
       }
     break;
   }
